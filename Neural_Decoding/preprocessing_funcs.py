@@ -125,7 +125,7 @@ def get_spikes_with_history(neural_data, bins_before, bins_after, bins_current=1
     X = np.empty(
         [num_examples, surrounding_bins, num_neurons]
     )  # Initialize covariate matrix with NaNs
-    X[:] = np.NaN
+    X[:] = np.nan
     # Loop through each time bin, and collect the spikes occurring in surrounding
     # time bins
     # Note that the first "bins_before" and last "bins_after" rows of X will remain
