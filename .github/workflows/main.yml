@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[test,sklearn,xgboost]
+          pip install .[test,sklearn,xgboost,legacy,nn]
 
       - name: Test with pytest
         run: |

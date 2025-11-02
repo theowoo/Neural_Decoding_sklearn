@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
+import os
+
 import numpy as np
 import pytest
 
 CHUNK_SIZE = 8192
+
+os.environ["KERAS_BACKEND"] = "torch"
 
 
 def test_import():
@@ -34,6 +38,10 @@ def get_data(tmp_path_factory):
 
     with open(data_path, "rb") as f:
         neural_data, vels_binned = pickle.load(f, encoding="latin1")
+
+    # torch requires float32
+    neural_data = neural_data.astype("float32")
+    vels_binned = vels_binned.astype("float32")
 
     return neural_data, vels_binned
 
@@ -407,3 +415,77 @@ def test_svr_sklearn(split_train_test):
     R2s_svr = r2_score(y_val, y_val_pred, multioutput="raw_values")
 
     assert R2s_svr == pytest.approx([0.74705083, 0.76820803], rel=0.01)
+
+
+def test_dnn(set_up_train_test):
+
+    import torch
+
+    from Neural_Decoding.decoders import DenseNNDecoder
+    from Neural_Decoding.metrics import get_R2
+
+    torch.manual_seed(99)
+
+    X_train, X_flat_train, y_train, X_valid, X_flat_valid, y_valid = set_up_train_test
+
+    # Declare model
+    model_dnn = DenseNNDecoder(units=400, dropout=0.25, num_epochs=10)
+
+    # Fit model
+    model_dnn.fit(X_flat_train, y_train)
+
+    # Get predictions
+    y_valid_predicted_dnn = model_dnn.predict(X_flat_valid)
+
+    # Get metric of fit
+    R2s_dnn = get_R2(y_valid, y_valid_predicted_dnn)
+
+    # Not using notebook value because using torch instead of tensorflow
+    assert R2s_dnn == pytest.approx([0.82115216, 0.83913305], rel=0.05)
+
+
+def test_dnn_sklearn(split_train_test):
+
+    import torch
+    from sklearn.metrics import r2_score
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from skorch import NeuralNetRegressor
+    from torch import optim
+
+    from Neural_Decoding.decoders import FNN
+    from Neural_Decoding.preprocessing_funcs import LagMat
+
+    torch.manual_seed(99)
+
+    X_train, y_train, X_val, y_val = split_train_test
+
+    # standardising y in addition to X
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=True)),
+            (
+                "fnn",
+                NeuralNetRegressor(
+                    module=FNN,
+                    lr=0.001,
+                    iterator_train__shuffle=True,
+                    optimizer=optim.Adam,
+                    batch_size=32,
+                    module__n_targets=y_train.shape[1],
+                    module__num_units=400,
+                    module__frac_dropout=0.25,
+                    module__n_layers=2,
+                    max_epochs=10,
+                    verbose=0,
+                ),
+            ),
+        ]
+    )
+
+    pipe.fit(X_train, y_train)
+    y_val_pred = pipe.predict(X_val)
+    R2s_dnn = r2_score(y_val, y_val_pred, multioutput="raw_values")
+
+    assert R2s_dnn == pytest.approx([0.82578506, 0.84818598], rel=0.05)
