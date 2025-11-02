@@ -127,6 +127,15 @@ def test_lagmat(get_lagmat):
     assert X.shape == (61339, 13, 52)
 
 
+def test_lagmat_against_get_spikes_with_history(get_history, get_lagmat):
+
+    X, _, bins_before, _, bins_after = get_history
+    X_lagmat, _, _, _, _ = get_lagmat
+
+    # the only difference in behaviour is lagmat fill with 0
+    assert np.all(X_lagmat[bins_before:-bins_after] == X[bins_before:-bins_after])
+
+
 @pytest.fixture(scope="session")
 def set_up_train_test(get_history):
 
@@ -214,3 +223,52 @@ def test_wiener_filter(set_up_train_test):
     R2s_wf = get_R2(y_valid, y_valid_predicted_wf)
 
     assert R2s_wf == pytest.approx([0.72457168, 0.71731407])
+
+
+@pytest.fixture(scope="session")
+def split_train_test(get_data):
+    from sklearn.model_selection import train_test_split
+
+    X, y = get_data
+
+    X_train_test, X_val = train_test_split(X, train_size=0.85, shuffle=False)
+    y_train_test, y_val = train_test_split(y, train_size=0.85, shuffle=False)
+
+    X_train, X_test = train_test_split(
+        X_train_test, train_size=0.7 / 0.85, shuffle=False
+    )
+    y_train, y_test = train_test_split(
+        y_train_test, train_size=0.7 / 0.85, shuffle=False
+    )
+
+    return X_train, y_train, X_val, y_val
+
+
+def test_wiener_filter_with_zscore_using_pipeline(split_train_test):
+
+    from sklearn.linear_model import LinearRegression
+    from sklearn.metrics import r2_score
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
+    from Neural_Decoding.preprocessing_funcs import LagMat
+
+    bins_before = 6
+    bins_current = 1
+    bins_after = 6
+
+    X_train, y_train, X_val, y_val = split_train_test
+
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("lagmat", LagMat(bins_before, bins_current, bins_after, flat=True)),
+            ("linear", LinearRegression()),
+        ]
+    )
+
+    pipe.fit(X_train, y_train)
+    y_val_pred = pipe.predict(X_val)
+    R2s_wf = r2_score(y_val, y_val_pred, multioutput="raw_values")
+
+    assert R2s_wf == pytest.approx([0.72457168, 0.71731407], rel=0.005)
