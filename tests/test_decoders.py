@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
+import numpy as np
 import pytest
 
 CHUNK_SIZE = 8192
@@ -37,7 +38,8 @@ def get_data(tmp_path_factory):
     return neural_data, vels_binned
 
 
-def test_get_spikes_with_history(get_data):
+@pytest.fixture(scope="session")
+def get_history(get_data):
 
     from Neural_Decoding.preprocessing_funcs import get_spikes_with_history
 
@@ -53,4 +55,102 @@ def test_get_spikes_with_history(get_data):
 
     X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
 
+    y = vels_binned
+
+    return X, y, bins_before, bins_current, bins_after
+
+
+def test_get_spikes_with_history(get_history):
+
+    X, y, _, _, _ = get_history
+
     assert X.shape == (61339, 13, 52)
+
+
+@pytest.fixture(scope="session")
+def set_up_train_test(get_history):
+
+    X, y, bins_before, bins_current, bins_after = get_history
+
+    X_flat = X.reshape(X.shape[0], (X.shape[1] * X.shape[2]))
+
+    training_range = [0, 0.7]
+    testing_range = [0.7, 0.85]
+    valid_range = [0.85, 1]
+
+    num_examples = X.shape[0]
+
+    # Note that each range has a buffer of"bins_before" bins at the beginning,
+    # and "bins_after" bins at the end
+    # This makes it so that the different sets don't include overlapping neural data
+    training_set = np.arange(
+        int(np.round(training_range[0] * num_examples)) + bins_before,
+        int(np.round(training_range[1] * num_examples)) - bins_after,
+    )
+    testing_set = np.arange(
+        int(np.round(testing_range[0] * num_examples)) + bins_before,
+        int(np.round(testing_range[1] * num_examples)) - bins_after,
+    )
+    valid_set = np.arange(
+        int(np.round(valid_range[0] * num_examples)) + bins_before,
+        int(np.round(valid_range[1] * num_examples)) - bins_after,
+    )
+
+    # Get training data
+    X_train = X[training_set, :, :]
+    X_flat_train = X_flat[training_set, :]
+    y_train = y[training_set, :]
+
+    # Get testing data
+    X_test = X[testing_set, :, :]
+    X_flat_test = X_flat[testing_set, :]
+    y_test = y[testing_set, :]
+
+    # Get validation data
+    X_valid = X[valid_set, :, :]
+    X_flat_valid = X_flat[valid_set, :]
+    y_valid = y[valid_set, :]
+
+    # Z-score "X" inputs.
+    X_train_mean = np.nanmean(X_train, axis=0)
+    X_train_std = np.nanstd(X_train, axis=0)
+    X_train = (X_train - X_train_mean) / X_train_std
+    X_test = (X_test - X_train_mean) / X_train_std
+    X_valid = (X_valid - X_train_mean) / X_train_std
+
+    # Z-score "X_flat" inputs.
+    X_flat_train_mean = np.nanmean(X_flat_train, axis=0)
+    X_flat_train_std = np.nanstd(X_flat_train, axis=0)
+    X_flat_train = (X_flat_train - X_flat_train_mean) / X_flat_train_std
+    X_flat_test = (X_flat_test - X_flat_train_mean) / X_flat_train_std
+    X_flat_valid = (X_flat_valid - X_flat_train_mean) / X_flat_train_std
+
+    # Zero-center outputs
+    y_train_mean = np.mean(y_train, axis=0)
+    y_train = y_train - y_train_mean
+    y_test = y_test - y_train_mean
+    y_valid = y_valid - y_train_mean
+
+    return X_train, X_flat_train, y_train, X_valid, X_flat_valid, y_valid
+
+
+def test_wiener_filter(set_up_train_test):
+
+    from Neural_Decoding.decoders import WienerFilterDecoder
+    from Neural_Decoding.metrics import get_R2
+
+    X_train, X_flat_train, y_train, X_valid, X_flat_valid, y_valid = set_up_train_test
+
+    # Declare model
+    model_wf = WienerFilterDecoder()
+
+    # Fit model
+    model_wf.fit(X_flat_train, y_train)
+
+    # Get predictions
+    y_valid_predicted_wf = model_wf.predict(X_flat_valid)
+
+    # Get metric of fit
+    R2s_wf = get_R2(y_valid, y_valid_predicted_wf)
+
+    assert R2s_wf == pytest.approx([0.72457168, 0.71731407])
