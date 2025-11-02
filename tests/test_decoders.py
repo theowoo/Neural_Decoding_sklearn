@@ -45,13 +45,9 @@ def get_history(get_data):
 
     neural_data, vels_binned = get_data
 
-    bins_before = (
-        6  # How many bins of neural data prior to the output are used for decoding
-    )
+    bins_before = 6
     bins_current = 1  # Whether to use concurrent time bin of neural data
-    bins_after = (
-        6  # How many bins of neural data after the output are used for decoding
-    )
+    bins_after = 6
 
     X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
 
@@ -62,7 +58,71 @@ def get_history(get_data):
 
 def test_get_spikes_with_history(get_history):
 
-    X, y, _, _, _ = get_history
+    X, _, _, _, _ = get_history
+
+    assert X.shape == (61339, 13, 52)
+
+
+@pytest.fixture(scope="session")
+def get_lagmat(get_data):
+
+    from Neural_Decoding.preprocessing_funcs import LagMat
+
+    neural_data, vels_binned = get_data
+
+    bins_before = 6
+    bins_current = 1  # Whether to use concurrent time bin of neural data
+    bins_after = 6
+
+    X = LagMat(bins_before, bins_current, bins_after).fit_transform(neural_data)
+
+    y = vels_binned
+
+    return X, y, bins_before, bins_current, bins_after
+
+
+def test_lagmat(get_lagmat):
+
+    from Neural_Decoding.preprocessing_funcs import LagMat
+
+    A = np.array(
+        [
+            [0, 0, 0],
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3],
+        ]
+    )
+
+    A_lag = LagMat(1, 1, 2).fit_transform(A)
+
+    assert np.all(
+        A_lag[..., 0]
+        == np.array(
+            [
+                [0, 0, 1, 2],
+                [0, 1, 2, 3],
+                [1, 2, 3, 0],
+                [2, 3, 0, 0],
+            ]
+        )
+    )
+
+    A_lag = LagMat(3, 0, 0).fit_transform(A)
+
+    assert np.all(
+        A_lag[..., 0]
+        == np.array(
+            [
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 1],
+                [0, 1, 2],
+            ]
+        )
+    )
+
+    X, _, _, _, _ = get_lagmat
 
     assert X.shape == (61339, 13, 52)
 

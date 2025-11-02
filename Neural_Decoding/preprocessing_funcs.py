@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
 def bin_spikes(spike_times, dt, wdw_start, wdw_end):
@@ -144,3 +145,40 @@ def get_spikes_with_history(neural_data, bins_before, bins_after, bins_current=1
         ]  # Put neural data from surrounding bins in X, starting at row "bins_before"
         start_idx = start_idx + 1
     return X
+
+
+class LagMat(BaseEstimator, TransformerMixin):
+    """Make lag matrix, each column with a positive or negative lag"""
+
+    def __init__(self, bin_before, bin_current, bin_after, flat=False, **kwargs):
+        self.bin_before = bin_before
+        self.bin_current = bin_current
+        self.bin_after = bin_after
+        self.flat = flat
+        self.kwargs = kwargs
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        from statsmodels.tsa.tsatools import lagmat
+
+        after = lagmat(
+            X, self.bin_after + 1, trim="backward", original="ex", **self.kwargs
+        )
+        before = lagmat(
+            X, self.bin_before, trim="forward", original="ex", **self.kwargs
+        )
+        lagmat = before.reshape(X.shape[0], -1, X.shape[1])[:, ::-1, :]
+        if self.bin_current == 1:
+            lagmat = np.concatenate(
+                [lagmat, X.reshape(X.shape[0], -1, X.shape[1])], axis=1
+            )
+        if self.bin_after > 0:
+            lagmat = np.concatenate(
+                [lagmat, after.reshape(X.shape[0], -1, X.shape[1])[:, -2::-1, :]],
+                axis=1,
+            )
+        if self.flat:
+            lagmat = lagmat.reshape(lagmat.shape[0], -1)
+        return lagmat.astype("float32")
