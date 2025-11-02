@@ -253,16 +253,12 @@ def test_wiener_filter_sklearn(split_train_test):
 
     from Neural_Decoding.preprocessing_funcs import LagMat
 
-    bins_before = 6
-    bins_current = 1
-    bins_after = 6
-
     X_train, y_train, X_val, y_val = split_train_test
 
     pipe = Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("lagmat", LagMat(bins_before, bins_current, bins_after, flat=True)),
+            ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=True)),
             ("linear", LinearRegression()),
         ]
     )
@@ -327,16 +323,12 @@ def test_xgboost_sklearn(split_train_test):
 
     from Neural_Decoding.preprocessing_funcs import LagMat
 
-    bins_before = 6
-    bins_current = 1
-    bins_after = 6
-
     X_train, y_train, X_val, y_val = split_train_test
 
     pipe = Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("lagmat", LagMat(bins_before, bins_current, bins_after, flat=True)),
+            ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=True)),
             ("xgb", XGBRegressor(max_depth=3, n_estimators=200, learning_rate=0.3)),
         ]
     )
@@ -396,10 +388,6 @@ def test_svr_sklearn(split_train_test):
     # specifically for svr
     warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
-    bins_before = 6
-    bins_current = 1
-    bins_after = 6
-
     X_train, y_train, X_val, y_val = split_train_test
 
     # standardising y in addition to X
@@ -407,7 +395,7 @@ def test_svr_sklearn(split_train_test):
         regressor=Pipeline(
             [
                 ("scaler", StandardScaler()),
-                ("lagmat", LagMat(bins_before, bins_current, bins_after, flat=True)),
+                ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=True)),
                 ("svr", MultiOutputRegressor(SVR(max_iter=1000, C=3))),
             ]
         ),
