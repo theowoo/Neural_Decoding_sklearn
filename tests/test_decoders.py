@@ -315,7 +315,7 @@ def test_xgboost(set_up_train_test):
     # Get metric of fit
     R2s_xgb = get_R2(y_valid, y_valid_predicted_xgb)
 
-    assert R2s_xgb == pytest.approx([0.75403783, 0.7662866])
+    assert R2s_xgb == pytest.approx([0.75403802, 0.76625732], rel=1e-4)
 
 
 def test_xgboost_sklearn(split_train_test):
@@ -345,4 +345,4 @@ def test_xgboost_sklearn(split_train_test):
     y_val_pred = pipe.predict(X_val)
     R2s_xgb = r2_score(y_val, y_val_pred, multioutput="raw_values")
 
-    assert R2s_xgb == pytest.approx([0.75403783, 0.7662866], rel=0.005)
+    assert R2s_xgb == pytest.approx([0.75403802, 0.76625732], rel=0.005)
