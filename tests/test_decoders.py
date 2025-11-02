@@ -346,3 +346,76 @@ def test_xgboost_sklearn(split_train_test):
     R2s_xgb = r2_score(y_val, y_val_pred, multioutput="raw_values")
 
     assert R2s_xgb == pytest.approx([0.75403802, 0.76625732], rel=0.005)
+
+
+def test_svr(set_up_train_test):
+
+    from Neural_Decoding.decoders import SVRDecoder
+    from Neural_Decoding.metrics import get_R2
+
+    X_train, X_flat_train, y_train, X_valid, X_flat_valid, y_valid = set_up_train_test
+
+    # The SVR works much better when the y values are normalized,
+    # so we first z-score the y values
+    # They have previously been zero-centered, so we will just divide by the stdev
+    # (of the training set)
+    y_train_std = np.nanstd(y_train, axis=0)
+    y_zscore_train = y_train / y_train_std
+    y_zscore_valid = y_valid / y_train_std
+
+    # Declare model
+    model_svr = SVRDecoder(C=5, max_iter=1000)
+
+    # Fit model
+    model_svr.fit(X_flat_train, y_zscore_train)
+
+    # Get predictions
+    y_zscore_valid_predicted_svr = model_svr.predict(X_flat_valid)
+
+    # Get metric of fit
+    R2s_svr = get_R2(y_zscore_valid, y_zscore_valid_predicted_svr)
+
+    # Not using notebook value to save time on iterations
+    assert R2s_svr == pytest.approx([0.74705083, 0.76820803])
+
+
+def test_svr_sklearn(split_train_test):
+
+    import warnings
+
+    from sklearn.compose import TransformedTargetRegressor
+    from sklearn.exceptions import ConvergenceWarning
+    from sklearn.metrics import r2_score
+    from sklearn.multioutput import MultiOutputRegressor
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.svm import SVR
+
+    from Neural_Decoding.preprocessing_funcs import LagMat
+
+    # specifically for svr
+    warnings.filterwarnings("ignore", category=ConvergenceWarning)
+
+    bins_before = 6
+    bins_current = 1
+    bins_after = 6
+
+    X_train, y_train, X_val, y_val = split_train_test
+
+    # standardising y in addition to X
+    pipe = TransformedTargetRegressor(
+        regressor=Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("lagmat", LagMat(bins_before, bins_current, bins_after, flat=True)),
+                ("svr", MultiOutputRegressor(SVR(max_iter=1000, C=3))),
+            ]
+        ),
+        transformer=StandardScaler(),
+    )
+
+    pipe.fit(X_train, y_train)
+    y_val_pred = pipe.predict(X_val)
+    R2s_svr = r2_score(y_val, y_val_pred, multioutput="raw_values")
+
+    assert R2s_svr == pytest.approx([0.74705083, 0.76820803], rel=0.01)
