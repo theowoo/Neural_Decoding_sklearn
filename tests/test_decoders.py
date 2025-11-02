@@ -244,7 +244,7 @@ def split_train_test(get_data):
     return X_train, y_train, X_val, y_val
 
 
-def test_wiener_filter_with_zscore_using_pipeline(split_train_test):
+def test_wiener_filter_sklearn(split_train_test):
 
     from sklearn.linear_model import LinearRegression
     from sklearn.metrics import r2_score
@@ -272,3 +272,77 @@ def test_wiener_filter_with_zscore_using_pipeline(split_train_test):
     R2s_wf = r2_score(y_val, y_val_pred, multioutput="raw_values")
 
     assert R2s_wf == pytest.approx([0.72457168, 0.71731407], rel=0.005)
+
+
+def test_wiener_cascade(set_up_train_test):
+
+    from Neural_Decoding.decoders import WienerCascadeDecoder
+    from Neural_Decoding.metrics import get_R2
+
+    X_train, X_flat_train, y_train, X_valid, X_flat_valid, y_valid = set_up_train_test
+
+    # Declare model
+    model_wc = WienerCascadeDecoder(degree=3)
+
+    # Fit model
+    model_wc.fit(X_flat_train, y_train)
+
+    # Get predictions
+    y_valid_predicted_wc = model_wc.predict(X_flat_valid)
+
+    # Get metric of fit
+    R2s_wc = get_R2(y_valid, y_valid_predicted_wc)
+
+    assert R2s_wc == pytest.approx([0.73127717, 0.73370796])
+
+
+def test_xgboost(set_up_train_test):
+
+    from Neural_Decoding.decoders import XGBoostDecoder
+    from Neural_Decoding.metrics import get_R2
+
+    X_train, X_flat_train, y_train, X_valid, X_flat_valid, y_valid = set_up_train_test
+
+    # Declare model
+    model_xgb = XGBoostDecoder(max_depth=3, num_round=200, eta=0.3, gpu=-1)
+
+    # Fit model
+    model_xgb.fit(X_flat_train, y_train)
+
+    # Get predictions
+    y_valid_predicted_xgb = model_xgb.predict(X_flat_valid)
+
+    # Get metric of fit
+    R2s_xgb = get_R2(y_valid, y_valid_predicted_xgb)
+
+    assert R2s_xgb == pytest.approx([0.75403783, 0.7662866])
+
+
+def test_xgboost_sklearn(split_train_test):
+
+    from sklearn.metrics import r2_score
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from xgboost import XGBRegressor
+
+    from Neural_Decoding.preprocessing_funcs import LagMat
+
+    bins_before = 6
+    bins_current = 1
+    bins_after = 6
+
+    X_train, y_train, X_val, y_val = split_train_test
+
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("lagmat", LagMat(bins_before, bins_current, bins_after, flat=True)),
+            ("xgb", XGBRegressor(max_depth=3, n_estimators=200, learning_rate=0.3)),
+        ]
+    )
+
+    pipe.fit(X_train, y_train)
+    y_val_pred = pipe.predict(X_val)
+    R2s_xgb = r2_score(y_val, y_val_pred, multioutput="raw_values")
+
+    assert R2s_xgb == pytest.approx([0.75403783, 0.7662866], rel=0.005)
