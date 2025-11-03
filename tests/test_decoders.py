@@ -304,6 +304,33 @@ def test_wiener_cascade(set_up_train_test):
     assert R2s_wc == pytest.approx([0.73127717, 0.73370796])
 
 
+def test_wiener_cascade_sklearn(split_train_test):
+
+    from sklearn.metrics import r2_score
+    from sklearn.multioutput import MultiOutputRegressor
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
+    from Neural_Decoding.nonlinear import WienerCascade
+    from Neural_Decoding.preprocessing_funcs import LagMat
+
+    X_train, y_train, X_val, y_val = split_train_test
+
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=True)),
+            ("wc", MultiOutputRegressor(WienerCascade(deg=3))),
+        ]
+    )
+
+    pipe.fit(X_train, y_train)
+    y_val_pred = pipe.predict(X_val)
+    R2s_wc = r2_score(y_val, y_val_pred, multioutput="raw_values")
+
+    assert R2s_wc == pytest.approx([0.73127717, 0.73370796], rel=0.005)
+
+
 def test_xgboost(set_up_train_test):
 
     from Neural_Decoding.decoders import XGBoostDecoder
