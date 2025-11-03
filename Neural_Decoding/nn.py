@@ -100,3 +100,37 @@ class GRU(nn.Module):
         X = self.output(X)
 
         return X
+
+
+class LSTM(nn.Module):
+
+    def __init__(self, num_units=10, frac_dropout=0, n_layers=1, n_targets=2):
+        super().__init__()
+
+        assert n_layers > 0
+        self.n_layers = n_layers
+        self.num_units = num_units
+        self.frac_dropout = frac_dropout
+
+        self.lstm = None
+        self.dropout = nn.Dropout(frac_dropout)
+        self.flatten = nn.Flatten()
+        self.output = nn.LazyLinear(n_targets)
+
+    def forward(self, X, **kwargs):
+
+        if self.lstm is None:
+            input_size = X.shape[-1]
+            self.lstm = nn.LSTM(
+                input_size=input_size,
+                hidden_size=self.num_units,
+                num_layers=self.n_layers,
+                dropout=self.frac_dropout,
+            ).to(X.device)
+
+        X, hidden_state = self.lstm(X)
+        X = self.dropout(X)
+        X = self.flatten(X)
+        X = self.output(X)
+
+        return X

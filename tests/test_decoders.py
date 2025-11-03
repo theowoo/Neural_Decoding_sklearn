@@ -607,7 +607,7 @@ def test_gru_sklearn(split_train_test):
     from Neural_Decoding.nn import GRU
     from Neural_Decoding.preprocessing_funcs import LagMat
 
-    torch.manual_seed(199)
+    torch.manual_seed(99)
 
     X_train, y_train, X_val, y_val = split_train_test
 
@@ -617,7 +617,7 @@ def test_gru_sklearn(split_train_test):
             ("scaler", StandardScaler()),
             ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=False)),
             (
-                "rnn",
+                "gru",
                 NeuralNetRegressor(
                     module=GRU,
                     lr=0.001,
@@ -641,3 +641,80 @@ def test_gru_sklearn(split_train_test):
     # use different values from sklearn because random seeds not transferrable
     # between keras and torch
     assert R2s_gru == pytest.approx([0.7294793, 0.7182585], rel=0.05)
+
+
+@pytest.mark.skip(
+    reason="Keras/PyTorch certain version memory leak causes test to crash."
+)
+def test_lstm(set_up_train_test):
+
+    from keras.utils import set_random_seed
+
+    from Neural_Decoding.decoders import LSTMDecoder
+    from Neural_Decoding.metrics import get_R2
+
+    set_random_seed(99)
+
+    X_train, X_flat_train, y_train, X_valid, X_flat_valid, y_valid = set_up_train_test
+
+    # Declare model
+    model_lstm = LSTMDecoder(units=400, dropout=0, num_epochs=5, verbose=1)
+
+    # Fit model
+    model_lstm.fit(X_train, y_train)
+
+    # Get predictions
+    y_valid_predicted_lstm = model_lstm.predict(X_valid)
+
+    # Get metric of fit
+    R2s_lstm = get_R2(y_valid, y_valid_predicted_lstm)
+
+    assert R2s_lstm == pytest.approx([0.84809856, 0.84108359], rel=0.05)
+
+
+def test_lstm_sklearn(split_train_test):
+
+    import torch
+    from sklearn.metrics import r2_score
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from skorch import NeuralNetRegressor
+    from torch import optim
+
+    from Neural_Decoding.nn import LSTM
+    from Neural_Decoding.preprocessing_funcs import LagMat
+
+    torch.manual_seed(99)
+
+    X_train, y_train, X_val, y_val = split_train_test
+
+    # not flat X
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=False)),
+            (
+                "lstm",
+                NeuralNetRegressor(
+                    module=LSTM,
+                    lr=0.001,
+                    iterator_train__shuffle=False,
+                    optimizer=optim.RMSprop,
+                    batch_size=32,
+                    module__n_targets=y_train.shape[1],
+                    module__num_units=400,
+                    module__frac_dropout=0,
+                    max_epochs=5,
+                    verbose=0,
+                ),
+            ),
+        ]
+    )
+
+    pipe.fit(X_train, y_train)
+    y_val_pred = pipe.predict(X_val)
+    R2s_lstm = r2_score(y_val, y_val_pred, multioutput="raw_values")
+
+    # use different values from sklearn because random seeds not transferrable
+    # between keras and torch
+    assert R2s_lstm == pytest.approx([0.7530093, 0.73186845], rel=0.005)
