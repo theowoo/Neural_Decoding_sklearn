@@ -10,6 +10,10 @@ CHUNK_SIZE = 8192
 
 os.environ["KERAS_BACKEND"] = "torch"
 
+# Enforce CUDA deterministic behaviour which causes known non-determinism
+# issues in RNN and LSTM
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
+
 
 def test_import():
 
@@ -419,12 +423,12 @@ def test_svr_sklearn(split_train_test):
 
 def test_dnn(set_up_train_test):
 
-    import torch
+    from keras.utils import set_random_seed
 
     from Neural_Decoding.decoders import DenseNNDecoder
     from Neural_Decoding.metrics import get_R2
 
-    torch.manual_seed(99)
+    set_random_seed(99)
 
     X_train, X_flat_train, y_train, X_valid, X_flat_valid, y_valid = set_up_train_test
 
@@ -440,8 +444,7 @@ def test_dnn(set_up_train_test):
     # Get metric of fit
     R2s_dnn = get_R2(y_valid, y_valid_predicted_dnn)
 
-    # Not using notebook value because using torch instead of tensorflow
-    assert R2s_dnn == pytest.approx([0.82115216, 0.83913305], rel=0.05)
+    assert R2s_dnn == pytest.approx([0.82578506, 0.84818598], rel=0.05)
 
 
 def test_dnn_sklearn(split_train_test):
@@ -453,14 +456,13 @@ def test_dnn_sklearn(split_train_test):
     from skorch import NeuralNetRegressor
     from torch import optim
 
-    from Neural_Decoding.decoders import FNN
+    from Neural_Decoding.nn import FNN
     from Neural_Decoding.preprocessing_funcs import LagMat
 
     torch.manual_seed(99)
 
     X_train, y_train, X_val, y_val = split_train_test
 
-    # standardising y in addition to X
     pipe = Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -489,3 +491,79 @@ def test_dnn_sklearn(split_train_test):
     R2s_dnn = r2_score(y_val, y_val_pred, multioutput="raw_values")
 
     assert R2s_dnn == pytest.approx([0.82578506, 0.84818598], rel=0.05)
+
+
+def test_rnn(set_up_train_test):
+
+    from keras.utils import set_random_seed
+
+    from Neural_Decoding.decoders import SimpleRNNDecoder
+    from Neural_Decoding.metrics import get_R2
+
+    set_random_seed(99)
+
+    X_train, X_flat_train, y_train, X_valid, X_flat_valid, y_valid = set_up_train_test
+
+    # Declare model
+    model_rnn = SimpleRNNDecoder(units=400, dropout=0, num_epochs=5)
+
+    # Fit model
+    model_rnn.fit(X_train, y_train)
+
+    # Get predictions
+    y_valid_predicted_rnn = model_rnn.predict(X_valid)
+
+    # Get metric of fit
+    R2s_rnn = get_R2(y_valid, y_valid_predicted_rnn)
+
+    # not using notebook values because cannot match it without changing
+    # the original code
+    assert R2s_rnn == pytest.approx([0.7816605, 0.7862867])
+
+
+def test_rnn_sklearn(split_train_test):
+
+    import torch
+    from sklearn.metrics import r2_score
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from skorch import NeuralNetRegressor
+    from torch import optim
+
+    from Neural_Decoding.nn import RNN
+    from Neural_Decoding.preprocessing_funcs import LagMat
+
+    torch.manual_seed(99)
+
+    X_train, y_train, X_val, y_val = split_train_test
+
+    # not flat X
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=False)),
+            (
+                "rnn",
+                NeuralNetRegressor(
+                    module=RNN,
+                    lr=0.001,
+                    iterator_train__shuffle=True,
+                    optimizer=optim.RMSprop,
+                    batch_size=32,
+                    module__n_targets=y_train.shape[1],
+                    module__num_units=400,
+                    module__frac_dropout=0,
+                    max_epochs=10,
+                    verbose=0,
+                ),
+            ),
+        ]
+    )
+
+    pipe.fit(X_train, y_train)
+    y_val_pred = pipe.predict(X_val)
+    R2s_rnn = r2_score(y_val, y_val_pred, multioutput="raw_values")
+
+    # use different values from sklearn because random seeds not transferrable
+    # between keras and torch
+    assert R2s_rnn == pytest.approx([0.7513478, 0.7245656], rel=0.005)
