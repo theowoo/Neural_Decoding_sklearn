@@ -41,6 +41,12 @@ The following decoders have been tested.
 | GRUDecoder | ✅ | `skorch.NeuralNetRegressor(Neural_Decoding.nn.GRU)` | |
 | LSTMDecoder | ✅ | `skorch.NeuralNetRegressor(Neural_Decoding.nn.LSTM)` | |
 
+### Usage Examples
+
+Two accompanying notebooks demonstrates walk through our current workflow.
+
+- `Examples_sklearn_decoders.ipynb`: Run each decoder separately, based on `Examples_original/Examples_all_decoders.ipynb`.
+- `Examples_sklearn_cross_validation.ipynb`: Run multiple decoders with cross validation, a direct comparaison with `Paper_code/ManyDecoders_FullData.ipynb`
 
 ## Our manuscript and datasets
 This package accompanies a [manuscript](https://arxiv.org/abs/1708.00909) that compares the performance of these methods on several datasets. We would appreciate if you cite that manuscript if you use our code or data for your research.

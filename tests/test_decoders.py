@@ -435,7 +435,7 @@ def test_svr_sklearn(split_train_test):
             [
                 ("scaler", StandardScaler()),
                 ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=True)),
-                ("svr", MultiOutputRegressor(SVR(max_iter=1000, C=3))),
+                ("svr", MultiOutputRegressor(SVR(max_iter=1000, C=5))),
             ]
         ),
         transformer=StandardScaler(),
