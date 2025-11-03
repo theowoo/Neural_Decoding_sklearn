@@ -36,4 +36,15 @@ repos:
     - id: detect-secrets
       name: detect-secrets - Detect secrets in staged code
       args: [ "--baseline", ".secrets.baseline" ]
-      exclude: .*/tests/.*|^\.cruft\.json$|Examples_all_decoders.ipynb
+      exclude: .*/tests/.*|^\.cruft\.json$|Examples_original/*
+- repo: https://github.com/nbQA-dev/nbQA
+  rev: 1.9.1
+  hooks:
+    - id: nbqa-isort
+      name: nbqa-isort - Sort Python imports (notebooks; auto-fixes)
+      additional_dependencies: [ isort==7.0.0 ]
+      exclude: Examples_original/*
+    - id: nbqa-black
+      name: nbqa-black - consistent Python code formatting (notebooks; auto-fixes)
+      additional_dependencies: [ black==25.9.0 ]
+      exclude: Examples_original/*
