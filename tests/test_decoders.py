@@ -320,7 +320,7 @@ def test_wiener_cascade_sklearn(split_train_test):
         [
             ("scaler", StandardScaler()),
             ("lagmat", LagMat(bin_before=6, bin_current=1, bin_after=6, flat=True)),
-            ("wc", MultiOutputRegressor(WienerCascade(deg=3))),
+            ("wc", MultiOutputRegressor(WienerCascade(degree=3))),
         ]
     )
 
