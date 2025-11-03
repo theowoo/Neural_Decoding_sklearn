@@ -11,7 +11,7 @@ For classification, we currently include: Logistic Regression, Support Vector Cl
 This package was originally designed for regression and classification functions were just added - therefore, the ReadMe, examples, and preprocessing functions are still catered for regression. We are in the process of adding more for classification.
 
 
-## What is new in `Neural_Decoding_sklearn` compared to it upstream?
+## What is new in `Neural_Decoding_sklearn` compared to its upstream?
 
 Upstream: [KordingLab/Neural_Decoding](https://github.com/KordingLab/Neural_Decoding)
 
