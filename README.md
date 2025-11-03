@@ -66,7 +66,7 @@ pip install 'Neural_Decoding @ git+https://github.com/theowoo/Neural_Decoding_sk
 or via SSH
 
 ```buildoutcfg
-pip install 'Neural_Decoding @ git+git@github.com:theowoo/Neural_Decoding.git'
+pip install 'Neural_Decoding @ git+git@github.com:theowoo/Neural_Decoding_sklearn.git'
 ```
 
 We've designed the code so that not all machine learning packages need to be installed for the others to work.
