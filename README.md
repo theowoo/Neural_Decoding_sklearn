@@ -1,4 +1,4 @@
-# Neural_Decoding:
+# Neural_Decoding_sklearn
 
 ### A python package that includes many methods for decoding neural activity
 
@@ -9,6 +9,37 @@ For regression, we currently include: Wiener Filter, Wiener Cascade, Kalman Filt
 For classification, we currently include: Logistic Regression, Support Vector Classification, XGBoost, Dense Neural Network, Recurrent Neural Net, GRU, LSTM.
 
 This package was originally designed for regression and classification functions were just added - therefore, the ReadMe, examples, and preprocessing functions are still catered for regression. We are in the process of adding more for classification.
+
+
+## What is new in `Neural_Decoding_sklearn` compared to it upstream?
+
+Upstream: [KordingLab/Neural_Decoding](https://github.com/KordingLab/Neural_Decoding)
+
+1. To take full advantage of the extensive machine learning toolkit from the [`scikit-learn`](https://scikit-learn.org/) framework for data preprocessing (e.g. z-scoring), different scoring metrics, cross validation, hyperparameter search, pipelines
+    - We treat each decoder model as an `sklearn` estimator
+    - Neural network models are no longer based on Keras but on [`PyTorch`](https://pytorch.org/), with the sklearn adaptor provided by [`skorch`](https://github.com/skorch-dev/skorch)
+2. The preprocessing function `get_spikes_with_history` is replaced by a custom sklearn transformer class `LagMat` which is a wrapper of the similarly named function from [`statsmodels`](https://www.statsmodels.org/).
+3. A test suite to test the new implementation (against the original functions when relevant).
+4. Since we are able to make use of other popular and well-maintained codebases, the new workflow contains only a few additional scripts contained in `Neural_Decoding.nonlinear` and `Neural_Decoding.nn`.
+    - `Neural_Decoding.decoding` approaching deprecation but retained in the current version for testing purposes.
+5. Test data is now hosted on a different server that supports token-less download.
+
+### Overview of available models
+
+The following decoders have been tested.
+
+| Original      | Current | sklearn estimator | Notes |
+| ------------- | ------------- | --- | ----|
+| WienerFilterDecoder | ✅ | `sklearn.linear_model.LinearRegression` | |
+| WienerCascadeDecoder | ✅ | `Neural_Decoding.nonlinear.WienerCascade` | `sklearn.preprocessing.PolynomialFeatures` is too computationally intensive. So a wrapper that combines `sklearn.linear_model.LinearRegression` with `numpy.polyfit` is used. |
+| KalmanFilterDecoder | ❌ | | |
+| NaiveBayesDecoder | ❌ | | |
+| SVRDecoder | ✅ | `sklearn.multioutput.MultiOutputRegressor(sklearn.svm.SVR)` | `MultiOutputRegressor` is needed only for multi-target use. |
+| XGBoostDecoder | ✅ | `xgboost.XGBRegressor` | |
+| DenseNNDecoder | ✅ | `skorch.NeuralNetRegressor(Neural_Decoding.nn.FNN)` | |
+| SimpleRNNDecoder | ✅ | `skorch.NeuralNetRegressor(Neural_Decoding.nn.RNN)` | |
+| GRUDecoder | ✅ | `skorch.NeuralNetRegressor(Neural_Decoding.nn.GRU)` | |
+| LSTMDecoder | ✅ | `skorch.NeuralNetRegressor(Neural_Decoding.nn.LSTM)` | |
 
 
 ## Our manuscript and datasets
@@ -23,7 +54,7 @@ All 3 datasets (motor cortex, somatosensory cortex, and hippocampus) used in the
 This package can be installed via `pip` at the command line by typing
 
 ```buildoutcfg
-pip install 'Neural_Decoding @ git+https://github.com/theowoo/Neural_Decoding.git'
+pip install 'Neural_Decoding @ git+https://github.com/theowoo/Neural_Decoding_sklearn.git'
 ```
 
 or via SSH
@@ -39,19 +70,20 @@ We've designed the code so that not all machine learning packages need to be ins
 Specific dependencies may be specified. `[full]` will install all dependencies:
 
 ```buildoutcfg
-pip install 'Neural_Decoding[full] @ git+https://github.com/theowoo/Neural_Decoding.git'
+pip install 'Neural_Decoding[full] @ git+https://github.com/theowoo/Neural_Decoding_sklearn.git'
 ```
 
 Or combined:
 
 ```buildoutcfg
-pip install 'Neural_Decoding[nn,xgboost] @ git+https://github.com/theowoo/Neural_Decoding.git'
+pip install 'Neural_Decoding[nn,xgboost] @ git+https://github.com/theowoo/Neural_Decoding_sklearn.git'
 ```
 
 In order to run all the decoders based on neural networks, use `[nn]`. <br>
 In order to run the XGBoost Decoder, use `[xgboost]` <br>
 In order to run the Wiener Filter, Wiener Cascade, or Support Vector Regression, use `[sklearn]`. <br>
 In order to do hyperparameter optimization, use `[hyperopt]`.
+In order to run tests, use `[test]`.
 
 ## Getting started
 We have included jupyter notebooks that provide detailed examples of how to use the decoders.
