@@ -569,6 +569,7 @@ def test_rnn_sklearn(split_train_test):
     assert R2s_rnn == pytest.approx([0.7513478, 0.7245656], rel=0.005)
 
 
+@pytest.mark.long
 def test_gru(set_up_train_test):
 
     from keras.utils import set_random_seed
@@ -595,6 +596,7 @@ def test_gru(set_up_train_test):
     assert R2s_gru == pytest.approx([0.83770423, 0.83575681], rel=0.05)
 
 
+@pytest.mark.long
 def test_gru_sklearn(split_train_test):
 
     import torch
@@ -643,6 +645,7 @@ def test_gru_sklearn(split_train_test):
     assert R2s_gru == pytest.approx([0.7294793, 0.7182585], rel=0.05)
 
 
+@pytest.mark.long
 @pytest.mark.skip(
     reason="Keras/PyTorch certain version memory leak causes test to crash."
 )
@@ -672,6 +675,7 @@ def test_lstm(set_up_train_test):
     assert R2s_lstm == pytest.approx([0.84809856, 0.84108359], rel=0.05)
 
 
+@pytest.mark.long
 def test_lstm_sklearn(split_train_test):
 
     import torch
