@@ -36,5 +36,4 @@ repos:
     - id: detect-secrets
       name: detect-secrets - Detect secrets in staged code
       args: [ "--baseline", ".secrets.baseline" ]
-      exclude: .*/tests/.*|^\.cruft\.json$
-
+      exclude: .*/tests/.*|^\.cruft\.json$|Examples_all_decoders.ipynb

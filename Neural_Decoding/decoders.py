@@ -65,7 +65,7 @@ try:
     from keras.models import Sequential
 except ImportError:
     print(
-        "\nWARNING: Keras package is not installed. You will be unable to use all"
+        "\nWARNING: Keras package is not installed. You will be unable to use some"
         "neural net decoders"
     )
     pass
@@ -1891,4 +1891,5 @@ class XGBoostClassification(object):
         dtest = xgb.DMatrix(X_flat_test)  # Put in XGB format
         bst = self.model  # Get fit model
         y_test_predicted = bst.predict(dtest)  # Make prediction
+
         return y_test_predicted
