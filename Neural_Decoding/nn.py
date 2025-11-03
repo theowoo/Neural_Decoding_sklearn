@@ -91,6 +91,7 @@ class GRU(nn.Module):
                 hidden_size=self.num_units,
                 num_layers=self.n_layers,
                 dropout=self.frac_dropout,
+                batch_first=True,
             ).to(X.device)
 
         X, hidden_state = self.gru(X)

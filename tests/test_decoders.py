@@ -607,7 +607,7 @@ def test_gru_sklearn(split_train_test):
     from Neural_Decoding.nn import GRU
     from Neural_Decoding.preprocessing_funcs import LagMat
 
-    torch.manual_seed(99)
+    torch.manual_seed(199)
 
     X_train, y_train, X_val, y_val = split_train_test
 
@@ -638,4 +638,6 @@ def test_gru_sklearn(split_train_test):
     y_val_pred = pipe.predict(X_val)
     R2s_gru = r2_score(y_val, y_val_pred, multioutput="raw_values")
 
-    assert R2s_gru == pytest.approx([0.83770423, 0.83575681], rel=0.05)
+    # use different values from sklearn because random seeds not transferrable
+    # between keras and torch
+    assert R2s_gru == pytest.approx([0.7294793, 0.7182585], rel=0.05)
