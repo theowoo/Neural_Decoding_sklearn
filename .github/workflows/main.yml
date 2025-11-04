@@ -3,7 +3,11 @@
 
 name: Python application
 
-on: [push, pull_request]
+on:
+  push:
+    paths: ['Neural_Decoding/**', 'tests/**', 'pyproject.toml', '.github/workflows/*']
+  pull_request:
+    paths: ['Neural_Decoding/**', 'tests/**', 'pyproject.toml', '.github/workflows/*']
 
 jobs:
   build:
@@ -26,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[test,sklearn,xgboost,legacy,nn]
+          pip install . --group test --group full --group legacy
 
       - name: Test with pytest
         run: |
