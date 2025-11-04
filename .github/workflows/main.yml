@@ -5,9 +5,9 @@ name: Python application
 
 on:
   push:
-    paths: ['Neural_Decoding/**', 'tests/**', 'pyproject.toml']
+    paths: ['Neural_Decoding/**', 'tests/**', 'pyproject.toml', '.github/workflows/*']
   pull_request:
-    paths: ['Neural_Decoding/**', 'tests/**', 'pyproject.toml']
+    paths: ['Neural_Decoding/**', 'tests/**', 'pyproject.toml', '.github/workflows/*']
 
 jobs:
   build:
