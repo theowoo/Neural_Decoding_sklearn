@@ -71,25 +71,26 @@ pip install 'Neural_Decoding @ git+git@github.com:theowoo/Neural_Decoding_sklear
 
 We've designed the code so that not all machine learning packages need to be installed for the others to work.
 
-### Optional dependencies
+### Dependency groups
 
-Specific dependencies may be specified. `[full]` will install all dependencies:
+Specific dependencies may be specified. `full` will install all dependencies:
 
 ```buildoutcfg
-pip install 'Neural_Decoding[full] @ git+https://github.com/theowoo/Neural_Decoding_sklearn.git'
+pip install 'Neural_Decoding @ git+https://github.com/theowoo/Neural_Decoding_sklearn.git' --group full
 ```
 
 Or combined:
 
 ```buildoutcfg
-pip install 'Neural_Decoding[nn,xgboost] @ git+https://github.com/theowoo/Neural_Decoding_sklearn.git'
+pip install 'Neural_Decoding @ git+https://github.com/theowoo/Neural_Decoding_sklearn.git' --group nn --group xgboost
 ```
 
-In order to run all the decoders based on neural networks, use `[nn]`. <br>
-In order to run the XGBoost Decoder, use `[xgboost]` <br>
-In order to run the Wiener Filter, Wiener Cascade, or Support Vector Regression, use `[sklearn]`. <br>
-In order to do hyperparameter optimization, use `[hyperopt]`.
-In order to run tests, use `[test]`.
+In order to run all the decoders based on neural networks, use `nn`. <br>
+In order to run the XGBoost Decoder, use `xgboost` <br>
+In order to run the Wiener Filter, Wiener Cascade, or Support Vector Regression, use `sklearn`. <br>
+In order to do hyperparameter optimization, use `hyperopt`.
+For all of the above, use `full`.
+In order to run tests, use `test`.
 
 ## Getting started
 We have included jupyter notebooks that provide detailed examples of how to use the decoders.
